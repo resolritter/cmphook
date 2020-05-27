@@ -1,18 +1,115 @@
 import React, { useRef, useState, useEffect } from "react"
+import { shallowEqual } from "fast-equals"
 import "./App.css"
+
+const hooksState = new Map()
+function makeHooks(
+  key,
+  hookNamePrefixer = (hookName) => `${hookName[0]}${hookName}`,
+) {
+  if (!hooksState.has(key)) {
+    hooksState.set(key, {})
+  }
+
+  let cursor = 0
+  function getState() {
+    return hooksState.get(key)[++cursor]
+  }
+  function update(value) {
+    hooksState.set(
+      key,
+      Object.assign(hooksState.get(key), {
+        [cursor]: value,
+      }),
+    )
+    return value
+  }
+
+  return {
+    [hookNamePrefixer("setState")]: function(value, triggerUpdate) {
+      const state = getState()
+      if (state) {
+        return
+      }
+
+      function setValue(value, isTriggeringUpdate = true) {
+        hooksState.set(
+          key,
+          Object.assign(hooksState.get(key), {
+            [cursor]: { value },
+          }),
+        )
+        if (isTriggeringUpdate) {
+          triggerUpdate(value)
+        }
+      }
+      setValue(value, false)
+      return update([value, setValue])
+    },
+    [hookNamePrefixer("useEffect")]: function(f, deps) {
+      const { lastDeps } = getState() || {}
+      if (shallowEqual(lastDeps, deps)) {
+        return
+      }
+
+      update(f(...deps))
+    },
+    [hookNamePrefixer("useMemo")]: function(f, deps) {
+      const { lastDeps } = getState() || {}
+      if (shallowEqual(lastDeps, deps)) {
+        return
+      }
+
+      return update({ lastResult: f(...deps), lastDeps: deps }).lastResult
+    },
+    [hookNamePrefixer("useRef")]: function(initialValue) {
+      const state = getState()
+      if (state) {
+        return state
+      }
+
+      return update({
+        value: initialValue,
+        get current() {
+          return this.value
+        },
+        set current(value) {
+          this.value = value
+        },
+      })
+    },
+  }
+}
+
+function makeHook(f) {
+  return function(hooksOfInstance, ...args) {
+    return f(hooksOfInstance, ...args)
+  }
+}
+
+const useRenderCounter = makeHook(function({ uuseRef }, uniqueId) {
+  const count = uuseRef(0)
+  count.current += 1
+  return count.current
+})
 
 function counterMessageOf(renderCount, prepend = "") {
   return `${prepend}I've been called ${renderCount} times.`
 }
 
 // High-order component which sets up the subscription on behalf it child
-function bindOf(HookedComponent) {
+function makeSubscriber(HookedComponent) {
+  function childOf(value, uniqueId) {
+    return <HookedComponent value={value} uniqueId={uniqueId} />
+  }
   return React.memo(
-    function(props) {
-      const [value, setValue] = useState(props.initialValue)
-      props.subscribe(props.uniqueId, setValue)
+    function({ subscribe, initialValue, uniqueId }) {
+      const [child, setChild] = useState(childOf(initialValue, uniqueId))
+      subscribe(uniqueId, function(value) {
+        setChild(childOf(value, uniqueId))
+      })
 
-      return <HookedComponent value={value} uniqueId={props.uniqueId} />
+      return child
     },
     function alwaysSkipRenderFromProps() {
       return true
@@ -20,14 +117,7 @@ function bindOf(HookedComponent) {
   )
 }
 
-const renderCounter = new Map()
-function useRenderCounter(uniqueId) {
-  const renderCount = (renderCounter.get(uniqueId) || 0) + 1
-  renderCounter.set(uniqueId, renderCount)
-  return renderCount
-}
-
-function useBind(initialValue) {
+function usePropsSubscription(initialValue) {
   const [value, setValue] = useState(initialValue)
   // `Map` is used instead of an object because it provides dynamic lookup _on
   // demand_, as opposed to an object, where its value would be captured by the
@@ -35,9 +125,6 @@ function useBind(initialValue) {
   // easily be refreshed without needing to resubscribe - their value is always
   // looked up dynamically, thus it can be updated at any point.
   const listeners = useRef(new Map())
-  const bind = useRef(function(key, notificationCallback) {
-    listeners.current.set(key, notificationCallback)
-  })
 
   return [
     value,
@@ -47,21 +134,38 @@ function useBind(initialValue) {
       })
       setValue(newValue)
     },
-    bind.current,
+    function(key, notificationCallback) {
+      listeners.current.set(key, notificationCallback)
+    },
   ]
 }
 
-const Tock = bindOf(function({ value, uniqueId }) {
-  const renderCount = useRenderCounter(uniqueId)
+const Tock = makeSubscriber(function({ value, uniqueId }) {
+  const hooks = makeHooks(uniqueId)
+  const { uuseRef, uuseMemo } = hooks
+  const renderCount = useRenderCounter(hooks)
+  const refValue = uuseRef(0)
+  const mappedValue = uuseMemo(
+    function(value) {
+      return value * 2
+    },
+    [value],
+  )
   return (
     <div>
-      <div>{counterMessageOf(renderCount, `Tock #${value} received. `)}</div>
+      <div>
+        {counterMessageOf(
+          renderCount,
+          `Tock #${value} received. Derived ${mappedValue} from it. `,
+        )}
+      </div>
     </div>
   )
 })
 
-const Tick = bindOf(function({ value, uniqueId }) {
-  const renderCount = useRenderCounter(uniqueId)
+const Tick = makeSubscriber(function({ value, uniqueId }) {
+  const hooks = makeHooks(uniqueId)
+  const renderCount = useRenderCounter(hooks)
   return (
     <div>
       <div>{counterMessageOf(renderCount, `Tick #${value} received. `)}</div>
@@ -71,9 +175,10 @@ const Tick = bindOf(function({ value, uniqueId }) {
 
 let tickTock = 0
 function App() {
-  const [tick, setTick, subscribeToTick] = useBind(0)
-  const [tock, setTock, subscribeToTock] = useBind(0)
-  const renderCount = useRenderCounter("app")
+  const hooks = makeHooks("app")
+  const [tick, setTick, subscribeToTick] = usePropsSubscription(0)
+  const [tock, setTock, subscribeToTock] = usePropsSubscription(0)
+  const renderCount = useRenderCounter(hooks)
 
   // `setTock` and `setTick` will trigger an update every two seconds;
   // This would otherwise cause the whole tree to be re-rendered, but
@@ -101,7 +206,7 @@ function App() {
       <b>Ticker (Child 2)</b>
       <Tick subscribe={subscribeToTick} initialValue={tick} uniqueId={2} />
       <b>Tocker (Child)</b>
-      <Tock subscribe={subscribeToTock} initialValue={tick} uniqueId={3} />
+      <Tock subscribe={subscribeToTock} initialValue={tock} uniqueId={3} />
       <b>Parent</b>
       <br />
       {counterMessageOf(renderCount)}
@@ -116,7 +221,7 @@ function App() {
         <li>
           Although skipping renders is also possible with{" "}
           <code>componentDidUpdate</code> on class components, it'd mean losing
-          the ability to use hooks directly in the child.
+          the ability to use hooks directly in the host HOC.
         </li>
       </ul>
     </div>
