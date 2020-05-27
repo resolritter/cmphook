@@ -162,22 +162,29 @@ describe("useContext", function() {
 
   it("full course", function() {
     const sharedKey = "USER_ID"
-    const parentSubscription = jest.fn()
-    const childSubscription = jest.fn()
+    const notifyParent = jest.fn()
+    const notifyChild = jest.fn()
     const parentContext = makeParentHooks().useContext(sharedKey)
     const childContext = makeChildHooks().useContext(sharedKey)
-    const unsubscribeParent = parentContext.subscribe(parentSubscription)
-    const unsubscribeChild = childContext.subscribe(childSubscription)
+    const unsubscribeParent = parentContext.subscribe(notifyParent)
+    const unsubscribeChild = childContext.subscribe(notifyChild)
 
+    // both have the same value at the start, since `set` hasn't been called yet
     expect(parentContext.get()).toBe(childContext.get())
-    expect(childSubscription.mock.calls.length).toBe(0)
-    expect(parentSubscription.mock.calls.length).toBe(0)
+    // no calls to set have been made, so the subscription callbacks haven't
+    // been called yet
+    expect(notifyChild.mock.calls.length).toBe(0)
+    expect(notifyParent.mock.calls.length).toBe(0)
 
+    // check that, after the context is set:
+    // - the subscription callback has been called
+    // - the argument to the callback is the current context's state
+    // - the current context's value is the same as the one passed to the callback
     function check(value) {
-      expect(childSubscription.mock.calls.length).toBe(value + 1)
-      expect(parentSubscription.mock.calls.length).toBe(value + 1)
-      expect(childSubscription.mock.calls[value]).toEqual([value])
-      expect(parentSubscription.mock.calls[value]).toEqual([value])
+      expect(notifyChild.mock.calls.length).toBe(value + 1)
+      expect(notifyParent.mock.calls.length).toBe(value + 1)
+      expect(notifyChild.mock.calls[value]).toEqual([value])
+      expect(notifyParent.mock.calls[value]).toEqual([value])
       expect(childContext.get()).toBe(value)
       expect(parentContext.get()).toBe(value)
     }
@@ -194,16 +201,17 @@ describe("useContext", function() {
     const thirdValue = increment(secondValue)
     childContext.set(thirdValue)
     // check if the parent subscription has ended
-    expect(parentSubscription.mock.calls.length).toBe(2)
+    expect(notifyParent.mock.calls.length).toBe(2)
     // the child has not unsubscribed, so it continues to get updates
-    expect(childSubscription.mock.calls.length).toBe(3)
-    // the parent can still get the current value after unsubscribing
+    expect(notifyChild.mock.calls.length).toBe(3)
+    // the parent can still get the current value manually, even after
+    // unsubscribing
     expect(parentContext.get()).toBe(thirdValue)
 
     // the parent can subscribe again
-    const secondParentSubscription = parentContext.subscribe(parentSubscription)
+    const secondParentSubscription = parentContext.subscribe(notifyParent)
     const fourthValue = increment(thirdValue)
     parentContext.set(fourthValue)
-    expect(parentSubscription.mock.calls.length).toBe(3)
+    expect(notifyParent.mock.calls.length).toBe(3)
   })
 })
