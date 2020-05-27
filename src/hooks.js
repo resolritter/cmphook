@@ -115,14 +115,11 @@ function makeHooks(key, { hookNamePrefixer }) {
 
       const zeroState = [0, new Map()]
       return update({
-        get get() {
+        get: function() {
           return context.get(key)
         },
-        set set(value) {
-          ;(contextListeners.get(key) || zeroState)[1].forEach(function([
-            ,
-            notify,
-          ]) {
+        set: function(value) {
+          ;(contextListeners.get(key) || zeroState)[1].forEach(function(notify) {
             notify(value)
           })
           context.set(key, value)

@@ -151,3 +151,43 @@ describe("useRef", function() {
     expect(ref.current).toBe(increment(initialValue))
   })
 })
+
+describe("useContext", function() {
+  let makeParentHooks
+  let makeChildHooks
+  beforeEach(function() {
+    makeParentHooks = makeHookFactory(makeNewHookKey("useContextOnParent"))
+    makeChildHooks = makeHookFactory(makeNewHookKey("useContextOnChild"))
+  })
+
+  it("sets and listen from both parent and child", function() {
+    const sharedKey = "USER_ID"
+    const parentSubscription = jest.fn()
+    const childSubscription = jest.fn()
+    const parentContext = makeParentHooks().useContext(sharedKey)
+    const childContext = makeChildHooks().useContext(sharedKey)
+    parentContext.subscribe(parentSubscription)
+    childContext.subscribe(childSubscription)
+
+    expect(parentContext.get()).toBe(childContext.get())
+    expect(childSubscription.mock.calls.length).toBe(0)
+    expect(parentSubscription.mock.calls.length).toBe(0)
+
+    function check(value) {
+      expect(childSubscription.mock.calls.length).toBe(value + 1)
+      expect(parentSubscription.mock.calls.length).toBe(value + 1)
+      expect(childSubscription.mock.calls[value]).toEqual([value])
+      expect(parentSubscription.mock.calls[value]).toEqual([value])
+      expect(childContext.get()).toBe(value)
+      expect(parentContext.get()).toBe(value)
+    }
+
+    const firstValue = 0
+    parentContext.set(firstValue)
+    check(firstValue)
+
+    const secondValue = increment(firstValue)
+    childContext.set(secondValue)
+    check(secondValue)
+  })
+})
