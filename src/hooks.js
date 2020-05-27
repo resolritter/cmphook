@@ -27,25 +27,24 @@ export function makeHooks(
   }
 
   return {
-    [hookNamePrefixer("setState")]: function(value, triggerUpdate) {
+    [hookNamePrefixer("useState")]: function(value, triggerUpdate) {
       const state = getState()
       if (state) {
-        return
+        return state
       }
 
-      function setValue(value, isTriggeringUpdate = true) {
-        hooksState.set(
-          key,
-          Object.assign(hooksState.get(key), {
-            [cursor]: { value },
-          }),
-        )
-        if (isTriggeringUpdate) {
+      function set(newValue) {
+        value = newValue
+        if (triggerUpdate) {
           triggerUpdate(value)
         }
       }
-      setValue(value, false)
-      return update([value, setValue])
+      return update({
+        get: function() {
+          return value
+        },
+        set,
+      })
     },
     [hookNamePrefixer("useEffect")]: function(f, deps) {
       const { lastDeps } = getState() || {}
@@ -91,7 +90,7 @@ export function makeHooks(
 
       let currentState = initialState
       return update({
-        getState: function() {
+        get: function() {
           return currentState
         },
         dispatch: function(action) {
