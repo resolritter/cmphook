@@ -57,9 +57,9 @@ function makeHooks(key, { hookNamePrefixer }) {
       update({ lastDeps: deps, tearDown: f(...deps) })
     },
     [hookNamePrefixer("useMemo")]: function(f, deps) {
-      const { lastDeps } = forwardState() || {}
+      const { lastDeps, lastResult } = forwardState() || {}
       if (shallowEqual(lastDeps, deps)) {
-        return
+        return lastResult
       }
 
       return update({ lastResult: f(...deps), lastDeps: deps }).lastResult

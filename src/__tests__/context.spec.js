@@ -89,7 +89,7 @@ describe("useEffect", function() {
     makeHooks = makeHookFactory(makeNewHookKey("useEffect"))
   })
 
-  it("skips updates when necessary", function() {
+  it("skips running the effect when the dependencies don't change", function() {
     let deps = [1]
     const effect = jest.fn()
     makeHooks().useEffect(effect, deps)
@@ -101,5 +101,30 @@ describe("useEffect", function() {
 
     makeHooks().useEffect(effect, deps)
     expect(effect.mock.calls.length).toBe(2)
+  })
+})
+
+describe("useMemo", function() {
+  let makeHooks
+  beforeEach(function() {
+    makeHooks = makeHookFactory(makeNewHookKey("useMemo"))
+  })
+
+  it("skips running the memoization when the dependencies don't change", function() {
+    const memoization = jest.fn(increment)
+
+    const firstDeps = [1]
+    const firstValue = makeHooks().useMemo(memoization, firstDeps)
+    expect(firstValue).toBe(increment(firstDeps[0]))
+    expect(memoization.mock.calls.length).toBe(1)
+    // won't change since the deps didn't change either
+    const theSameFirstValue = makeHooks().useMemo(memoization, firstDeps)
+    expect(memoization.mock.calls.length).toBe(1)
+    expect(firstValue).toBe(theSameFirstValue)
+
+    // deps have changed => expect to run the memoization again
+    const secondDeps = [increment(firstValue)]
+    const secondValue = makeHooks().useMemo(memoization, secondDeps)
+    expect(secondValue).toBe(increment(secondDeps[0]))
   })
 })
