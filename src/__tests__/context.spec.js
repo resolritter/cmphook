@@ -138,17 +138,17 @@ describe("useRef", function() {
 
   it("allows mutation", function() {
     const initialValue = 0
-    const ref = makeHooks().useRef(initialValue)
-    expect(ref.current).toBe(initialValue)
+    // ref should allow setting the value by call only on the first time
+    const { get, set } = makeHooks().useRef(initialValue)
+    expect(get()).toBe(initialValue)
 
-    // allows mutation through `current`
-    ref.current = 1
-    expect(ref.current).toBe(increment(initialValue))
+    // allows mutation
+    set(1)
+    expect(get()).toBe(increment(initialValue))
 
-    // it should ignore new values passed to it, because it can only be mutated
-    // through `current`
+    // it should ignore new values passed to it
     const sameRef = makeHooks().useRef("whatever")
-    expect(ref.current).toBe(increment(initialValue))
+    expect(sameRef.get()).toBe(increment(initialValue))
   })
 })
 
