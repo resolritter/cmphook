@@ -160,14 +160,14 @@ describe("useContext", function() {
     makeChildHooks = makeHookFactory(makeNewHookKey("useContextOnChild"))
   })
 
-  it("sets and listen from both parent and child", function() {
+  it("full course", function() {
     const sharedKey = "USER_ID"
     const parentSubscription = jest.fn()
     const childSubscription = jest.fn()
     const parentContext = makeParentHooks().useContext(sharedKey)
     const childContext = makeChildHooks().useContext(sharedKey)
-    parentContext.subscribe(parentSubscription)
-    childContext.subscribe(childSubscription)
+    const unsubscribeParent = parentContext.subscribe(parentSubscription)
+    const unsubscribeChild = childContext.subscribe(childSubscription)
 
     expect(parentContext.get()).toBe(childContext.get())
     expect(childSubscription.mock.calls.length).toBe(0)
@@ -189,5 +189,21 @@ describe("useContext", function() {
     const secondValue = increment(firstValue)
     childContext.set(secondValue)
     check(secondValue)
+
+    unsubscribeParent()
+    const thirdValue = increment(secondValue)
+    childContext.set(thirdValue)
+    // check if the parent subscription has ended
+    expect(parentSubscription.mock.calls.length).toBe(2)
+    // the child has not unsubscribed, so it continues to get updates
+    expect(childSubscription.mock.calls.length).toBe(3)
+    // the parent can still get the current value after unsubscribing
+    expect(parentContext.get()).toBe(thirdValue)
+
+    // the parent can subscribe again
+    const secondParentSubscription = parentContext.subscribe(parentSubscription)
+    const fourthValue = increment(thirdValue)
+    parentContext.set(fourthValue)
+    expect(parentSubscription.mock.calls.length).toBe(3)
   })
 })

@@ -138,7 +138,7 @@ function makeHooks(key, { hookNamePrefixer }) {
           ])
 
           return function unsubscribe() {
-            contextListeners.get(key)[1].remove(subscriptionKey)
+            contextListeners.get(key)[1].delete(subscriptionKey)
           }
         },
       })
