@@ -1,6 +1,7 @@
 import { makeHookFactory } from "../hooks.js"
 import { increment, makeNewHookKey } from "../testHelpers.js"
 
+// Each call to makeHooks in this file represents another re-render
 describe("useReducer", function() {
   let makeHooks
   let hooksKey = 0
@@ -126,5 +127,27 @@ describe("useMemo", function() {
     const secondDeps = [increment(firstValue)]
     const secondValue = makeHooks().useMemo(memoization, secondDeps)
     expect(secondValue).toBe(increment(secondDeps[0]))
+  })
+})
+
+describe("useRef", function() {
+  let makeHooks
+  beforeEach(function() {
+    makeHooks = makeHookFactory(makeNewHookKey("useRef"))
+  })
+
+  it("allows mutation", function() {
+    const initialValue = 0
+    const ref = makeHooks().useRef(initialValue)
+    expect(ref.current).toBe(initialValue)
+
+    // allows mutation through `current`
+    ref.current = 1
+    expect(ref.current).toBe(increment(initialValue))
+
+    // it should ignore new values passed to it, because it can only be mutated
+    // through `current`
+    const sameRef = makeHooks().useRef("whatever")
+    expect(ref.current).toBe(increment(initialValue))
   })
 })
