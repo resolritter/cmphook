@@ -3,18 +3,17 @@ import { shallowEqual } from "fast-equals"
 const context = new Map()
 const contextListeners = new Map()
 const hooksState = new Map()
-
-export function makeHooks(
-  key,
-  hookNamePrefixer = (hookName) => `${hookName[0]}${hookName}`,
-) {
+function makeHooks(key, { hookNamePrefixer }) {
   if (!hooksState.has(key)) {
     hooksState.set(key, {})
   }
 
   let cursor = 0
-  function getState() {
+  function forwardState() {
     return hooksState.get(key)[++cursor]
+  }
+  function getState() {
+    return hooksState.get(key)[cursor]
   }
   function update(value) {
     hooksState.set(
@@ -28,7 +27,7 @@ export function makeHooks(
 
   return {
     [hookNamePrefixer("useState")]: function(value, triggerUpdate) {
-      const state = getState()
+      const state = forwardState()
       if (state) {
         return state
       }
@@ -47,15 +46,18 @@ export function makeHooks(
       })
     },
     [hookNamePrefixer("useEffect")]: function(f, deps) {
-      const { lastDeps } = getState() || {}
-      if (shallowEqual(lastDeps, deps)) {
+      const { lastDeps, tearDown } = forwardState() || {}
+      if (lastDeps && shallowEqual(lastDeps, deps)) {
         return
       }
+      if (tearDown) {
+        tearDown()
+      }
 
-      update(f(...deps))
+      update({ lastDeps: deps, tearDown: f(...deps) })
     },
     [hookNamePrefixer("useMemo")]: function(f, deps) {
-      const { lastDeps } = getState() || {}
+      const { lastDeps } = forwardState() || {}
       if (shallowEqual(lastDeps, deps)) {
         return
       }
@@ -63,7 +65,7 @@ export function makeHooks(
       return update({ lastResult: f(...deps), lastDeps: deps }).lastResult
     },
     [hookNamePrefixer("useRef")]: function(initialValue) {
-      const state = getState()
+      const state = forwardState()
       if (state) {
         return state
       }
@@ -83,7 +85,7 @@ export function makeHooks(
       initialState,
       triggerUpdate,
     ) {
-      const state = getState()
+      const state = forwardState()
       if (state) {
         return state
       }
@@ -106,7 +108,7 @@ export function makeHooks(
       })
     },
     [hookNamePrefixer("useContext")]: function(key) {
-      const state = getState()
+      const state = forwardState()
       if (state) {
         return state
       }
@@ -151,5 +153,17 @@ export function makeHooks(
 export function makeHook(f) {
   return function(makeHooksInstance, ...args) {
     return f(makeHooksInstance, ...args)
+  }
+}
+
+export function makeHookFactory(key, options) {
+  options = Object.assign(
+    {
+      hookNamePrefixer: (hookName) => hookName,
+    },
+    options || {},
+  )
+  return function() {
+    return makeHooks(key, options)
   }
 }
