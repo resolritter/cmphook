@@ -3,7 +3,7 @@ import { shallowEqual } from "fast-equals"
 const context = new Map()
 const contextListeners = new Map()
 const hooksState = new Map()
-export function makeHooks(key) {
+export function useHooks(key) {
   if (!hooksState.has(key)) {
     hooksState.set(key, {})
   }
@@ -149,14 +149,14 @@ export function makeHooks(key) {
   }
 }
 
-export function makeNewHook(f) {
+export function newHook(f) {
   return function (hooksInstance, ...args) {
     return f(hooksInstance, ...args)
   }
 }
 
 const hookKeysCounter = {}
-export function makeNewHookKey(name) {
+export function newHookKey(name) {
   hookKeysCounter[name] = (hookKeysCounter[name] || 0) + 1
   return `${name}_${hookKeysCounter[name]}`
 }

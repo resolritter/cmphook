@@ -1,8 +1,8 @@
 import React from "react"
 import "./App.css"
-import { makeHooks, makeNewHookKey, makeNewHook } from "external_hooks"
+import { useHooks, newHookKey, newHook } from "external_hooks"
 
-const useRenderCounter = makeNewHook(function (h, id) {
+const useRenderCounter = newHook(function (h, id) {
   const { get, set } = h.useRef(0)
   const newValue = get() + 1
   set(newValue)
@@ -22,7 +22,7 @@ class C extends React.Component {
     return false
   }
   componentDidMount() {
-    this.id = makeNewHookKey(this.props.C.toString())
+    this.id = newHookKey("component")
     this.unsubscribe = this.props.subscribe((newValue) => {
       this.value = newValue
       this.forceUpdate()
@@ -32,15 +32,17 @@ class C extends React.Component {
     this.unsubscribe()
   }
   render() {
-    return <this.props.C value={this.value} id={this} />
+    return <this.props.C value={this.value} id={this.id} />
   }
 }
 
+let useMemoCounter = -1
 function Tock({ value, id }) {
-  const h = makeHooks(id)
+  const h = useHooks(id)
   const renderCount = useRenderCounter(h)
   const derivedValue = h.useMemo(
     function (value) {
+      useMemoCounter++
       return value * 2
     },
     [value],
@@ -49,14 +51,14 @@ function Tock({ value, id }) {
     <div>
       {counterMessageOf(
         renderCount,
-        `Tock #${value} received. Derived ${derivedValue} from it. `,
+        `Tock #${value} received. useMemo value: ${derivedValue} has been calculated ${useMemoCounter} times. `,
       )}
     </div>
   )
 }
 
 function Tick({ value, id }) {
-  const hooks = makeHooks(id)
+  const hooks = useHooks(id)
   const renderCount = useRenderCounter(hooks)
   return (
     <div>
@@ -68,7 +70,7 @@ function Tick({ value, id }) {
 let tickTock = 0
 const initialTick = 0, initialTock = 0
 function App() {
-  const h = makeHooks("app")
+  const h = useHooks("app")
   const tick = h.useContext("tick", initialTick)
   const tock = h.useContext("tock", initialTock)
   const renderCount = useRenderCounter(h)
@@ -104,14 +106,9 @@ function App() {
       <p style={{ marginBottom: 0 }}>The example above showcases:</p>
       <ul style={{ listStyle: "inside", margin: 0 }}>
         <li>
-          How a re-render on a parent component is <b>not</b> triggering updates on all the children.
+          How Parent is not updating, since it isn't consuming the data itself, only hosting the context.
         </li>
         <li>Multiple children depending on the same "prop".</li>
-        <li>
-          Although skipping renders is also possible with{" "}
-          <code>componentDidUpdate</code>
-          on class components, it'd mean losing the ability to use hooks directly in the host HOC.
-        </li>
       </ul>
     </div>
   )

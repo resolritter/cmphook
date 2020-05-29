@@ -1,11 +1,11 @@
-import { increment, makeHookFactory } from "../testHelpers.js"
+import { increment, newHookFactory } from "./testHelpers.js"
 
 // Each call to makeHooks in this file represents another re-render
 describe("useReducer", function () {
   let makeHooks
   let hooksKey = 0
   beforeEach(function () {
-    makeHooks = makeHookFactory("useReducer")
+    makeHooks = newHookFactory("useReducer")
   })
   it("reduces an add", function () {
     const initialState = 0
@@ -61,7 +61,7 @@ describe("useState", function () {
   let makeHooks
   let hooksKey = 0
   beforeEach(function () {
-    makeHooks = makeHookFactory("useState")
+    makeHooks = newHookFactory("useState")
   })
   it("sets and does NOT update", function () {
     const { get, set } = makeHooks().useState()
@@ -86,7 +86,7 @@ describe("useState", function () {
 describe("useEffect", function () {
   let makeHooks
   beforeEach(function () {
-    makeHooks = makeHookFactory("useEffect")
+    makeHooks = newHookFactory("useEffect")
   })
 
   it("skips running the effect when the dependencies don't change", function () {
@@ -107,7 +107,7 @@ describe("useEffect", function () {
 describe("useMemo", function () {
   let makeHooks
   beforeEach(function () {
-    makeHooks = makeHookFactory("useMemo")
+    makeHooks = newHookFactory("useMemo")
   })
 
   it("skips running the memoization when the dependencies don't change", function () {
@@ -132,7 +132,7 @@ describe("useMemo", function () {
 describe("useRef", function () {
   let makeHooks
   beforeEach(function () {
-    makeHooks = makeHookFactory("useRef")
+    makeHooks = newHookFactory("useRef")
   })
 
   it("allows mutation", function () {
@@ -155,8 +155,8 @@ describe("useContext", function () {
   let makeParentHooks
   let makeChildHooks
   beforeEach(function () {
-    makeParentHooks = makeHookFactory("useContextOnParent")
-    makeChildHooks = makeHookFactory("useContextOnChild")
+    makeParentHooks = newHookFactory("useContextOnParent")
+    makeChildHooks = newHookFactory("useContextOnChild")
   })
 
   it("full course", function () {
