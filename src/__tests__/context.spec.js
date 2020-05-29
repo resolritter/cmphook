@@ -1,18 +1,17 @@
-import { makeHookFactory } from "../hooks.js"
-import { increment, makeNewHookKey } from "../testHelpers.js"
+import { increment, makeHookFactory } from "../testHelpers.js"
 
 // Each call to makeHooks in this file represents another re-render
-describe("useReducer", function() {
+describe("useReducer", function () {
   let makeHooks
   let hooksKey = 0
-  beforeEach(function() {
-    makeHooks = makeHookFactory(makeNewHookKey("useReducer"))
+  beforeEach(function () {
+    makeHooks = makeHookFactory("useReducer")
   })
-  it("reduces an add", function() {
+  it("reduces an add", function () {
     const initialState = 0
     const triggerUpdate = jest.fn()
     const { get, dispatch } = makeHooks().useReducer(
-      function(state, action) {
+      function (state, action) {
         switch (action.type) {
           case "ADD": {
             return increment(state)
@@ -33,11 +32,11 @@ describe("useReducer", function() {
     expect(triggerUpdate.mock.calls.length).toBe(1)
     expect(triggerUpdate.mock.calls[0]).toEqual([incremented])
   })
-  it("ignores non-existent action", function() {
+  it("ignores non-existent action", function () {
     const initialState = 0
     const triggerUpdate = jest.fn()
     const { get, dispatch } = makeHooks().useReducer(
-      function(state, action) {
+      function (state, action) {
         switch (action.type) {
           case "START": {
             return 1
@@ -58,20 +57,20 @@ describe("useReducer", function() {
   })
 })
 
-describe("useState", function() {
+describe("useState", function () {
   let makeHooks
   let hooksKey = 0
-  beforeEach(function() {
-    makeHooks = makeHookFactory(makeNewHookKey("useState"))
+  beforeEach(function () {
+    makeHooks = makeHookFactory("useState")
   })
-  it("sets and does NOT update", function() {
+  it("sets and does NOT update", function () {
     const { get, set } = makeHooks().useState()
     expect(get()).toBeUndefined()
     const initialState = 1
     set(initialState)
     expect(get()).toBe(initialState)
   })
-  it("sets and updates", function() {
+  it("sets and updates", function () {
     const initialState = 0
     const triggerUpdate = jest.fn()
     const { get, set } = makeHooks().useState(initialState, triggerUpdate)
@@ -84,13 +83,13 @@ describe("useState", function() {
   })
 })
 
-describe("useEffect", function() {
+describe("useEffect", function () {
   let makeHooks
-  beforeEach(function() {
-    makeHooks = makeHookFactory(makeNewHookKey("useEffect"))
+  beforeEach(function () {
+    makeHooks = makeHookFactory("useEffect")
   })
 
-  it("skips running the effect when the dependencies don't change", function() {
+  it("skips running the effect when the dependencies don't change", function () {
     let deps = [1]
     const effect = jest.fn()
     makeHooks().useEffect(effect, deps)
@@ -105,13 +104,13 @@ describe("useEffect", function() {
   })
 })
 
-describe("useMemo", function() {
+describe("useMemo", function () {
   let makeHooks
-  beforeEach(function() {
-    makeHooks = makeHookFactory(makeNewHookKey("useMemo"))
+  beforeEach(function () {
+    makeHooks = makeHookFactory("useMemo")
   })
 
-  it("skips running the memoization when the dependencies don't change", function() {
+  it("skips running the memoization when the dependencies don't change", function () {
     const memoization = jest.fn(increment)
 
     const firstDeps = [1]
@@ -130,13 +129,13 @@ describe("useMemo", function() {
   })
 })
 
-describe("useRef", function() {
+describe("useRef", function () {
   let makeHooks
-  beforeEach(function() {
-    makeHooks = makeHookFactory(makeNewHookKey("useRef"))
+  beforeEach(function () {
+    makeHooks = makeHookFactory("useRef")
   })
 
-  it("allows mutation", function() {
+  it("allows mutation", function () {
     const initialValue = 0
     // ref should allow setting the value by call only on the first time
     const { get, set } = makeHooks().useRef(initialValue)
@@ -152,15 +151,15 @@ describe("useRef", function() {
   })
 })
 
-describe("useContext", function() {
+describe("useContext", function () {
   let makeParentHooks
   let makeChildHooks
-  beforeEach(function() {
-    makeParentHooks = makeHookFactory(makeNewHookKey("useContextOnParent"))
-    makeChildHooks = makeHookFactory(makeNewHookKey("useContextOnChild"))
+  beforeEach(function () {
+    makeParentHooks = makeHookFactory("useContextOnParent")
+    makeChildHooks = makeHookFactory("useContextOnChild")
   })
 
-  it("full course", function() {
+  it("full course", function () {
     const sharedKey = "USER_ID"
     const notifyParent = jest.fn()
     const notifyChild = jest.fn()

@@ -3,7 +3,7 @@ import { shallowEqual } from "fast-equals"
 const context = new Map()
 const contextListeners = new Map()
 const hooksState = new Map()
-function makeHooks(key, { makeHookName }) {
+export function makeHooks(key) {
   if (!hooksState.has(key)) {
     hooksState.set(key, {})
   }
@@ -11,9 +11,6 @@ function makeHooks(key, { makeHookName }) {
   let cursor = 0
   function forwardState() {
     return hooksState.get(key)[++cursor]
-  }
-  function getState() {
-    return hooksState.get(key)[cursor]
   }
   function update(value) {
     hooksState.set(
@@ -26,7 +23,7 @@ function makeHooks(key, { makeHookName }) {
   }
 
   return {
-    [makeHookName("useState")]: function(value, triggerUpdate) {
+    useState: function (value, triggerUpdate) {
       const state = forwardState()
       if (state) {
         return state
@@ -39,13 +36,13 @@ function makeHooks(key, { makeHookName }) {
         }
       }
       return update({
-        get: function() {
+        get: function () {
           return value
         },
         set,
       })
     },
-    [makeHookName("useEffect")]: function(f, deps) {
+    useEffect: function (f, deps) {
       const { lastDeps, tearDown } = forwardState() || {}
       if (lastDeps && shallowEqual(lastDeps, deps)) {
         return
@@ -56,7 +53,7 @@ function makeHooks(key, { makeHookName }) {
 
       update({ lastDeps: deps, tearDown: f(...deps) })
     },
-    [makeHookName("useMemo")]: function(f, deps) {
+    useMemo: function (f, deps) {
       const { lastDeps, lastResult } = forwardState() || {}
       if (shallowEqual(lastDeps, deps)) {
         return lastResult
@@ -64,22 +61,22 @@ function makeHooks(key, { makeHookName }) {
 
       return update({ lastResult: f(...deps), lastDeps: deps }).lastResult
     },
-    [makeHookName("useRef")]: function(value) {
+    useRef: function (value) {
       const state = forwardState()
       if (state) {
         return state
       }
 
       return update({
-        get: function() {
+        get: function () {
           return value
         },
-        set: function(newValue) {
+        set: function (newValue) {
           value = newValue
         },
       })
     },
-    [makeHookName("useReducer")]: function(
+    useReducer: function (
       reduce,
       initialState,
       triggerUpdate,
@@ -91,10 +88,10 @@ function makeHooks(key, { makeHookName }) {
 
       let currentState = initialState
       return update({
-        get: function() {
+        get: function () {
           return currentState
         },
-        dispatch: function(action) {
+        dispatch: function (action) {
           const nextState = reduce(currentState, action)
           if (nextState === currentState) {
             return
@@ -106,24 +103,27 @@ function makeHooks(key, { makeHookName }) {
         },
       })
     },
-    [makeHookName("useContext")]: function(key) {
+    useContext: function (key, initialValue) {
       const state = forwardState()
       if (state) {
         return state
       }
 
+      if (!context.has(key)) {
+        context.set(key, initialValue)
+      }
       const zeroState = [0, new Map()]
       return update({
-        get: function() {
+        get: function () {
           return context.get(key)
         },
-        set: function(value) {
-          ;(contextListeners.get(key) || zeroState)[1].forEach(function(notify) {
+        set: function (value) {
+          ;(contextListeners.get(key) || zeroState)[1].forEach(function (notify) {
             notify(value)
           })
           context.set(key, value)
         },
-        subscribe: function(f) {
+        subscribe: function (f) {
           let subscriptionKey
           if (contextListeners.has(key)) {
             subscriptionKey = contextListeners.get(key)[0] + 1
@@ -140,6 +140,9 @@ function makeHooks(key, { makeHookName }) {
             contextListeners.get(key)[1].delete(subscriptionKey)
           }
         },
+        childProps: function () {
+          return { initialValue: this.get(), subscribe: this.subscribe }
+        },
       })
     },
     shallowEqual,
@@ -147,19 +150,13 @@ function makeHooks(key, { makeHookName }) {
 }
 
 export function makeNewHook(f) {
-  return function(hooksInstance, ...args) {
+  return function (hooksInstance, ...args) {
     return f(hooksInstance, ...args)
   }
 }
 
-export function makeHookFactory(key, options) {
-  options = Object.assign(
-    {
-      makeHookName: (hookName) => hookName,
-    },
-    options || {},
-  )
-  return function() {
-    return makeHooks(key, options)
-  }
+const hookKeysCounter = {}
+export function makeNewHookKey(name) {
+  hookKeysCounter[name] = (hookKeysCounter[name] || 0) + 1
+  return `${name}_${hookKeysCounter[name]}`
 }
