@@ -2,7 +2,7 @@ import React from "react"
 import "./App.css"
 import { useHooks, newHookKey, newHook } from "hooker"
 
-const useRenderCounter = newHook(function (h, id) {
+const useRenderCounter = newHook(function (h) {
   const { get, set } = h.useRef(0)
   const newValue = get() + 1
   set(newValue)
@@ -22,7 +22,7 @@ class C extends React.Component {
     return false
   }
   componentDidMount() {
-    this.id = newHookKey("component")
+    this.id = newHookKey()
     this.unsubscribe = this.props.subscribe((newValue) => {
       this.value = newValue
       this.forceUpdate()
@@ -32,37 +32,59 @@ class C extends React.Component {
     this.unsubscribe()
   }
   render() {
-    return <this.props.C value={this.value} id={this.id} />
+    return <this.props.C
+      value={this.value}
+      id={this.id}
+      update={() => {
+        this.forceUpdate()
+      }}
+    />
   }
 }
 
-let useMemoCounter = -1
 function Tock({ value, id }) {
   const h = useHooks(id)
   const renderCount = useRenderCounter(h)
-  const derivedValue = h.useMemo(
+  const memoCount = h.useRef(0)
+  const memoValue = h.useMemo(
     function (value) {
-      useMemoCounter++
+      memoCount.set(memoCount.get() + 1)
       return value * 2
     },
     [value],
   )
   return (
     <div>
-      {counterMessageOf(
-        renderCount,
-        `Tock #${value} received. useMemo value: ${derivedValue} has been calculated ${useMemoCounter} times. `,
-      )}
+      <p>
+        {counterMessageOf(
+          renderCount,
+          `Tock #${value} received. `,
+        )}
+      </p>
+      <p>
+        {`useMemo value: ${memoValue} has been calculated ${memoCount.get()} times.`}
+      </p>
     </div>
   )
 }
 
-function Tick({ value, id }) {
-  const hooks = useHooks(id)
-  const renderCount = useRenderCounter(hooks)
+function Tick({ value, id, update }) {
+  const h = useHooks(id)
+  const renderCount = useRenderCounter(h)
+  const { get, set } = h.useState(0, update)
   return (
-    <div>
-      <div>{counterMessageOf(renderCount, `Tick #${value} received. `)}</div>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <p>{counterMessageOf(renderCount, `Tick #${value} received. `)}</p>
+      <div style={{ display: "flex" }}>
+        <span style={{ paddingRight: "10px" }}>{`useState value: ${get()} `}</span>
+        <button
+          onClick={function () {
+            set(get() + 1)
+          }}
+        >
+          Increment (triggers an update)
+        </button>
+      </div>
     </div>
   )
 }
@@ -108,7 +130,7 @@ function App() {
         <li>
           How Parent is not updating, since it isn't consuming the data itself, only hosting the context.
         </li>
-        <li>Multiple children depending on the same "prop".</li>
+        <li>Multiple "Tick" children depending on the same "prop".</li>
       </ul>
     </div>
   )
