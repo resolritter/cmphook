@@ -1,6 +1,6 @@
 import React from "react"
 import "./App.css"
-import { useHooks, newHookKey, newHook } from "external_hooks"
+import { useHooks, newHookKey, newHook } from "hooker"
 
 const useRenderCounter = newHook(function (h, id) {
   const { get, set } = h.useRef(0)
