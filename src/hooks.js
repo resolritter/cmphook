@@ -25,7 +25,11 @@ export function useHooks(key) {
   return {
     useState: function (value, triggerUpdate) {
       const state = forwardState()
+      // state updates is assured through usage in tests
+      /* istanbul ignore next */
       if (state) {
+        // maintaining object equality is not a goal
+        /* istanbul ignore next */
         return state
       }
 
@@ -82,7 +86,11 @@ export function useHooks(key) {
       triggerUpdate,
     ) {
       const state = forwardState()
+      // state updates is assured through usage in tests
+      /* istanbul ignore next */
       if (state) {
+        // maintaining object equality is not a goal
+        /* istanbul ignore next */
         return state
       }
 
@@ -105,7 +113,11 @@ export function useHooks(key) {
     },
     useContext: function (key, initialValue) {
       const state = forwardState()
+      // state updates is assured through usage in tests
+      /* istanbul ignore next */
       if (state) {
+        // maintaining object equality is not a goal
+        /* istanbul ignore next */
         return state
       }
 

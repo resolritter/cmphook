@@ -1,16 +1,16 @@
 import { increment, newHookFactory } from "./testHelpers.js"
+import { newHook, newHookKey } from "./hooks.js"
 
-// Each call to makeHooks in this file represents another re-render
+// Each call to useHooks in this file represents another re-render
 describe("useReducer", function () {
-  let makeHooks
-  let hooksKey = 0
+  let useHooks
   beforeEach(function () {
-    makeHooks = newHookFactory("useReducer")
+    useHooks = newHookFactory("useReducer")
   })
   it("reduces an add", function () {
     const initialState = 0
     const triggerUpdate = jest.fn()
-    const { get, dispatch } = makeHooks().useReducer(
+    const { get, dispatch } = useHooks().useReducer(
       function (state, action) {
         switch (action.type) {
           case "ADD": {
@@ -35,7 +35,7 @@ describe("useReducer", function () {
   it("ignores non-existent action", function () {
     const initialState = 0
     const triggerUpdate = jest.fn()
-    const { get, dispatch } = makeHooks().useReducer(
+    const { get, dispatch } = useHooks().useReducer(
       function (state, action) {
         switch (action.type) {
           case "START": {
@@ -58,13 +58,12 @@ describe("useReducer", function () {
 })
 
 describe("useState", function () {
-  let makeHooks
-  let hooksKey = 0
+  let useHooks
   beforeEach(function () {
-    makeHooks = newHookFactory("useState")
+    useHooks = newHookFactory("useState")
   })
   it("sets and does NOT update", function () {
-    const { get, set } = makeHooks().useState()
+    const { get, set } = useHooks().useState()
     expect(get()).toBeUndefined()
     const initialState = 1
     set(initialState)
@@ -73,7 +72,7 @@ describe("useState", function () {
   it("sets and updates", function () {
     const initialState = 0
     const triggerUpdate = jest.fn()
-    const { get, set } = makeHooks().useState(initialState, triggerUpdate)
+    const { get, set } = useHooks().useState(initialState, triggerUpdate)
     expect(get()).toBe(initialState)
     const incremented = increment(initialState)
     set(incremented)
@@ -84,61 +83,67 @@ describe("useState", function () {
 })
 
 describe("useEffect", function () {
-  let makeHooks
+  let useHooks
   beforeEach(function () {
-    makeHooks = newHookFactory("useEffect")
+    useHooks = newHookFactory("useEffect")
   })
 
   it("skips running the effect when the dependencies don't change", function () {
     let deps = [1]
-    const effect = jest.fn()
-    makeHooks().useEffect(effect, deps)
+    const tearDown = jest.fn()
+    const effect = jest.fn(function () {
+      return tearDown
+    })
+    useHooks().useEffect(effect, deps)
     expect(effect.mock.calls.length).toBe(1)
+    expect(tearDown.mock.calls.length).toBe(0)
 
     deps = Array.prototype.concat(deps, [2])
-    makeHooks().useEffect(effect, deps)
+    useHooks().useEffect(effect, deps)
     expect(effect.mock.calls.length).toBe(2)
+    expect(tearDown.mock.calls.length).toBe(1)
 
-    makeHooks().useEffect(effect, deps)
+    useHooks().useEffect(effect, deps)
     expect(effect.mock.calls.length).toBe(2)
+    expect(tearDown.mock.calls.length).toBe(1)
   })
 })
 
 describe("useMemo", function () {
-  let makeHooks
+  let useHooks
   beforeEach(function () {
-    makeHooks = newHookFactory("useMemo")
+    useHooks = newHookFactory("useMemo")
   })
 
   it("skips running the memoization when the dependencies don't change", function () {
     const memoization = jest.fn(increment)
 
     const firstDeps = [1]
-    const firstValue = makeHooks().useMemo(memoization, firstDeps)
+    const firstValue = useHooks().useMemo(memoization, firstDeps)
     expect(firstValue).toBe(increment(firstDeps[0]))
     expect(memoization.mock.calls.length).toBe(1)
     // won't change since the deps didn't change either
-    const theSameFirstValue = makeHooks().useMemo(memoization, firstDeps)
+    const theSameFirstValue = useHooks().useMemo(memoization, firstDeps)
     expect(memoization.mock.calls.length).toBe(1)
     expect(firstValue).toBe(theSameFirstValue)
 
     // deps have changed => expect to run the memoization again
     const secondDeps = [increment(firstValue)]
-    const secondValue = makeHooks().useMemo(memoization, secondDeps)
+    const secondValue = useHooks().useMemo(memoization, secondDeps)
     expect(secondValue).toBe(increment(secondDeps[0]))
   })
 })
 
 describe("useRef", function () {
-  let makeHooks
+  let useHooks
   beforeEach(function () {
-    makeHooks = newHookFactory("useRef")
+    useHooks = newHookFactory("useRef")
   })
 
   it("allows mutation", function () {
     const initialValue = 0
     // ref should allow setting the value by call only on the first time
-    const { get, set } = makeHooks().useRef(initialValue)
+    const { get, set } = useHooks().useRef(initialValue)
     expect(get()).toBe(initialValue)
 
     // allows mutation
@@ -146,7 +151,7 @@ describe("useRef", function () {
     expect(get()).toBe(increment(initialValue))
 
     // it should ignore new values passed to it
-    const sameRef = makeHooks().useRef("whatever")
+    const sameRef = useHooks().useRef("whatever")
     expect(sameRef.get()).toBe(increment(initialValue))
   })
 })
@@ -174,6 +179,11 @@ describe("useContext", function () {
     // been called yet
     expect(notifyChild.mock.calls.length).toBe(0)
     expect(notifyParent.mock.calls.length).toBe(0)
+
+    // check that the props properly reference the context
+    const props = parentContext.childProps()
+    expect(props.initialValue).toBeUndefined()
+    expect(props.subscribe).toBe(parentContext.subscribe)
 
     // check that, after the context is set:
     // - the subscription callback has been called
@@ -212,5 +222,40 @@ describe("useContext", function () {
     const fourthValue = increment(thirdValue)
     parentContext.set(fourthValue)
     expect(notifyParent.mock.calls.length).toBe(3)
+  })
+})
+
+describe("newHook", function () {
+  let useHooks
+  beforeEach(function () {
+    useHooks = newHookFactory("newHook")
+  })
+  it("can define a new hook", function () {
+    const useRenderCounter = newHook(function (h) {
+      const { get, set } = h.useRef(0)
+      const newValue = get() + 1
+      set(newValue)
+      return newValue
+    })
+    let h = useHooks()
+    let renderCount = useRenderCounter(h)
+    expect(renderCount).toBe(1)
+    h = useHooks()
+    renderCount = useRenderCounter(h)
+    expect(renderCount).toBe(2)
+  })
+})
+
+describe("newHookKey", function () {
+  it("generate unique keys without an explicit prefix", function () {
+    const newKey = newHookKey()
+    const anotherKey = newHookKey()
+    expect(newKey).not.toEqual(anotherKey)
+  })
+  it("generate unique keys with an explicit prefix", function () {
+    const prefix = "abc"
+    const newKey = newHookKey(prefix)
+    const anotherKey = newHookKey(prefix)
+    expect(newKey).not.toEqual(anotherKey)
   })
 })

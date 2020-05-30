@@ -6,6 +6,7 @@
   "scripts": {
     "build": "webpack --config ./buildTools/webpack.config.prod.js",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "test:watch": "jest --watch"
   },
   "repository": {
