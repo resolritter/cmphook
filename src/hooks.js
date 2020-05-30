@@ -1,29 +1,8 @@
 import { shallowEqual } from "fast-equals"
 
-const context = new Map()
-const contextListeners = new Map()
-const hooksState = new Map()
-export function useHooks(key) {
-  if (!hooksState.has(key)) {
-    hooksState.set(key, {})
-  }
-
-  let cursor = 0
-  function forwardState() {
-    return hooksState.get(key)[++cursor]
-  }
-  function update(value) {
-    hooksState.set(
-      key,
-      Object.assign(hooksState.get(key), {
-        [cursor]: value,
-      }),
-    )
-    return value
-  }
-
-  return {
-    useState: function (value, triggerUpdate) {
+const hooksCreator = {
+  useState: function (forwardState, update) {
+    return function (value, triggerUpdate) {
       const state = forwardState()
       // state updates is assured through usage in tests
       /* istanbul ignore next */
@@ -45,8 +24,10 @@ export function useHooks(key) {
         },
         set,
       })
-    },
-    useEffect: function (f, deps) {
+    }
+  },
+  useEffect: function (forwardState, update) {
+    return function (f, deps) {
       const { lastDeps, tearDown } = forwardState() || {}
       if (lastDeps && shallowEqual(lastDeps, deps)) {
         return
@@ -56,16 +37,20 @@ export function useHooks(key) {
       }
 
       update({ lastDeps: deps, tearDown: f(...deps) })
-    },
-    useMemo: function (f, deps) {
+    }
+  },
+  useMemo: function (forwardState, update) {
+    return function (f, deps) {
       const { lastDeps, lastResult } = forwardState() || {}
       if (shallowEqual(lastDeps, deps)) {
         return lastResult
       }
 
       return update({ lastResult: f(...deps), lastDeps: deps }).lastResult
-    },
-    useRef: function (value) {
+    }
+  },
+  useRef: function (forwardState, update) {
+    return function (value) {
       const state = forwardState()
       if (state) {
         return state
@@ -79,8 +64,10 @@ export function useHooks(key) {
           value = newValue
         },
       })
-    },
-    useReducer: function (
+    }
+  },
+  useReducer: function (forwardState, update) {
+    return function (
       reduce,
       initialState,
       triggerUpdate,
@@ -110,8 +97,10 @@ export function useHooks(key) {
           }
         },
       })
-    },
-    useContext: function (key, initialValue) {
+    }
+  },
+  useContext: function (forwardState, update) {
+    return function (key, initialValue) {
       const state = forwardState()
       // state updates is assured through usage in tests
       /* istanbul ignore next */
@@ -156,9 +145,39 @@ export function useHooks(key) {
           return { initialValue: this.get(), subscribe: this.subscribe }
         },
       })
-    },
-    shallowEqual,
+    }
+  },
+}
+
+const context = new Map()
+const contextListeners = new Map()
+const hooksState = new Map()
+const hookList = Object.keys(hooksCreator)
+export function useHooks(key, options) {
+  if (!hooksState.has(key)) {
+    hooksState.set(key, {})
   }
+
+  let cursor = 0
+  function forwardState() {
+    return hooksState.get(key)[++cursor]
+  }
+  function update(value) {
+    hooksState.set(
+      key,
+      Object.assign(hooksState.get(key), {
+        [cursor]: value,
+      }),
+    )
+    return value
+  }
+
+  const hooks = { shallowEqual }
+  for (const hookName of (options && options.only ? options.only : hookList)) {
+    hooks[hookName] = hooksCreator[hookName](forwardState, update)
+  }
+
+  return hooks
 }
 
 export function newHook(f) {

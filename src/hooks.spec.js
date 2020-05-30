@@ -1,5 +1,5 @@
 import { increment, newHookFactory } from "./testHelpers.js"
-import { newHook, newHookKey } from "./hooks.js"
+import { newHook, newHookKey, useHooks } from "./hooks.js"
 
 // Each call to useHooks in this file represents another re-render
 describe("useReducer", function () {
@@ -257,5 +257,17 @@ describe("newHookKey", function () {
     const newKey = newHookKey(prefix)
     const anotherKey = newHookKey(prefix)
     expect(newKey).not.toEqual(anotherKey)
+  })
+})
+
+describe("useHooks", function () {
+  it("generates only the requested keys", function () {
+    const h = useHooks(newHookKey(), { only: ["useMemo"] })
+    expect(h.useState).toBeUndefined()
+    expect(h.useMemo).not.toBeUndefined()
+  })
+  it("generates all keys if not explicitly requested", function () {
+    const h = useHooks(newHookKey())
+    expect(h.useState).not.toBeUndefined()
   })
 })
