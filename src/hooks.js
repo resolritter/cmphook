@@ -119,10 +119,10 @@ const hooksCreator = {
           return context.get(key)
         },
         set: function (value) {
+          context.set(key, value)
           ;(contextListeners.get(key) || zeroState)[1].forEach(function (notify) {
             notify(value)
           })
-          context.set(key, value)
         },
         subscribe: function (f) {
           let subscriptionKey
