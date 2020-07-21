@@ -180,14 +180,14 @@ export function useHooks(key, options) {
   return hooks
 }
 
-export function newHook(f) {
+export function createNewHook(f) {
   return function (hooksInstance, ...args) {
     return f(hooksInstance, ...args)
   }
 }
 
 const hookKeysCounter = {}
-export function newHookKey(name = "$__hooker__") {
+export function newKey(name = "$__hooker__") {
   hookKeysCounter[name] = (hookKeysCounter[name] || 0) + 1
   return `${name}_${hookKeysCounter[name]}`
 }

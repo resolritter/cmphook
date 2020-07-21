@@ -1,11 +1,11 @@
-import { increment, newHookFactory } from "./testHelpers.js"
-import { newHook, newHookKey, useHooks } from "./hooks.js"
+import { increment, createNewHookFactory } from "./testHelpers.js"
+import { createNewHook, newKey, useHooks } from "./hooks.js"
 
 // Each call to useHooks in this file represents another re-render
 describe("useReducer", function () {
   let useHooks
   beforeEach(function () {
-    useHooks = newHookFactory("useReducer")
+    useHooks = createNewHookFactory("useReducer")
   })
   it("reduces an add", function () {
     const initialState = 0
@@ -60,7 +60,7 @@ describe("useReducer", function () {
 describe("useState", function () {
   let useHooks
   beforeEach(function () {
-    useHooks = newHookFactory("useState")
+    useHooks = createNewHookFactory("useState")
   })
   it("sets and does NOT update", function () {
     const { get, set } = useHooks().useState()
@@ -85,7 +85,7 @@ describe("useState", function () {
 describe("useEffect", function () {
   let useHooks
   beforeEach(function () {
-    useHooks = newHookFactory("useEffect")
+    useHooks = createNewHookFactory("useEffect")
   })
 
   it("skips running the effect when the dependencies don't change", function () {
@@ -112,7 +112,7 @@ describe("useEffect", function () {
 describe("useMemo", function () {
   let useHooks
   beforeEach(function () {
-    useHooks = newHookFactory("useMemo")
+    useHooks = createNewHookFactory("useMemo")
   })
 
   it("skips running the memoization when the dependencies don't change", function () {
@@ -137,7 +137,7 @@ describe("useMemo", function () {
 describe("useRef", function () {
   let useHooks
   beforeEach(function () {
-    useHooks = newHookFactory("useRef")
+    useHooks = createNewHookFactory("useRef")
   })
 
   it("allows mutation", function () {
@@ -160,8 +160,8 @@ describe("useContext", function () {
   let makeParentHooks
   let makeChildHooks
   beforeEach(function () {
-    makeParentHooks = newHookFactory("useContextOnParent")
-    makeChildHooks = newHookFactory("useContextOnChild")
+    makeParentHooks = createNewHookFactory("useContextOnParent")
+    makeChildHooks = createNewHookFactory("useContextOnChild")
   })
 
   it("full course", function () {
@@ -225,13 +225,13 @@ describe("useContext", function () {
   })
 })
 
-describe("newHook", function () {
+describe("createNewHook", function () {
   let useHooks
   beforeEach(function () {
-    useHooks = newHookFactory("newHook")
+    useHooks = createNewHookFactory("createNewHook")
   })
   it("can define a new hook", function () {
-    const useRenderCounter = newHook(function (h) {
+    const useRenderCounter = createNewHook(function (h) {
       const { get, set } = h.useRef(0)
       const newValue = get() + 1
       set(newValue)
@@ -246,28 +246,28 @@ describe("newHook", function () {
   })
 })
 
-describe("newHookKey", function () {
+describe("newKey", function () {
   it("generate unique keys without an explicit prefix", function () {
-    const newKey = newHookKey()
-    const anotherKey = newHookKey()
+    const key = newKey()
+    const anotherKey = newKey()
     expect(newKey).not.toEqual(anotherKey)
   })
   it("generate unique keys with an explicit prefix", function () {
     const prefix = "abc"
-    const newKey = newHookKey(prefix)
-    const anotherKey = newHookKey(prefix)
+    const key = newKey(prefix)
+    const anotherKey = newKey(prefix)
     expect(newKey).not.toEqual(anotherKey)
   })
 })
 
 describe("useHooks", function () {
   it("generates only the requested keys", function () {
-    const h = useHooks(newHookKey(), { only: ["useMemo"] })
+    const h = useHooks(newKey(), { only: ["useMemo"] })
     expect(h.useState).toBeUndefined()
     expect(h.useMemo).not.toBeUndefined()
   })
   it("generates all keys if not explicitly requested", function () {
-    const h = useHooks(newHookKey())
+    const h = useHooks(newKey())
     expect(h.useState).not.toBeUndefined()
   })
 })

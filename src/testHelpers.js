@@ -1,11 +1,11 @@
-import { newHookKey, useHooks } from "./hooks.js"
+import { newKey, useHooks } from "./hooks.js"
 
 export function increment(state) {
   return state + 1
 }
 
-export function newHookFactory(key) {
-  key = newHookKey(key)
+export function createNewHookFactory(key) {
+  key = newKey(key)
   return function () {
     return useHooks(key)
   }

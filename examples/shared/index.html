@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Example</title>
+    <style>
+        body {
+          margin: 0;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+            "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+            sans-serif;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          text-align: center;
+        }
+
+        body > * {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        code {
+          font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+            monospace;
+        }
+
+        p {
+          margin: 0;
+        }
+
+        #app {
+          text-align: center;
+        }
+
+        .triggerUpdateRow {
+          display: flex;
+        }
+        .triggerUpdateRow > span {
+          padding-right: 10px;
+        }
+
+        .infoSection {
+          width: 60%;
+          minWidth: 600px;
+        }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="app"></div>
+    <hr />
+    <section>
+      <div class="infoSection">
+        <p><b>What is this about?</b></p>
+        <p>The above app shows a parent which hosts a "tick" and "tock" states. The Ticker childs are interested in the tick increases, while the Tocker childs are interested in the Tock increases.</p>
+        <p>Since Hooker is framework-agnostic, its state management approach is not bound to the frameworks' lifecycles runtime invariants, thus the updates can be finely controlled. For instance, even though the parent is managing two child's states (the tick and the tock), the children will only update when their state of interest changes. In comparison, most frameworks will diff the whole tree on <b>any</b> state change.</p>
+        <br>
+      </div>
+    </section>
+    <section>
+      <div class="infoSection">
+        <p style="margin-bottom: 0;"><b>Notice how:</b></p>
+        <ul style="margin-top: 0.5rem">
+          <li>
+            How Parent is not updating, since it isn't consuming the data itself, only hosting the context.
+          </li>
+          <li>Multiple "Tick" children depending on the same "prop".</li>
+        </ul>
+      </div>
+    </section>
+  </body>
+</html>
