@@ -1,0 +1,3 @@
+# Running
+
+`npm run start`
