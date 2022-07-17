@@ -1,9 +1,9 @@
 {
-  "name": "hooker_react_example",
+  "name": "cmphook_react_example",
   "version": "1.0.0",
   "description": "Hooker example in React",
   "main": "index.js",
-  "repository": "https://github.com/resolritter/hooker/tree/master/examples/react",
+  "repository": "https://github.com/resolritter/cmphook/tree/master/examples/react",
   "scripts": {
     "start": "NODE_ENV=development webpack-dev-server --config webpack.config.js"
   },

@@ -187,7 +187,7 @@ export function createNewHook(f) {
 }
 
 const hookKeysCounter = {}
-export function newKey(name = "$__hooker__") {
+export function newKey(name = "$__cmphook__") {
   hookKeysCounter[name] = (hookKeysCounter[name] || 0) + 1
   return `${name}_${hookKeysCounter[name]}`
 }

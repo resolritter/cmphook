@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Hooker example in Mithril",
   "main": "index.js",
-  "repository": "https://github.com/resolritter/hooker/tree/master/examples/mithril",
+  "repository": "https://github.com/resolritter/cmphook/tree/master/examples/mithril",
   "scripts": {
     "start": "NODE_ENV=development webpack-dev-server --config webpack.config.js"
   },

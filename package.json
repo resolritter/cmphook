@@ -1,5 +1,5 @@
 {
-  "name": "hooker",
+  "name": "cmphook",
   "version": "1.0.0",
   "description": "",
   "main": "src/hooks.js",
@@ -11,15 +11,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/resolritter/hooker.git"
+    "url": "git+https://github.com/resolritter/cmphook.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/resolritter/hooker/issues"
+    "url": "https://github.com/resolritter/cmphook/issues"
   },
-  "homepage": "https://github.com/resolritter/hooker#readme",
+  "homepage": "https://github.com/resolritter/cmphook#readme",
   "devDependencies": {
     "@babel/core": "^7.10.1",
     "@babel/preset-env": "^7.10.1",
