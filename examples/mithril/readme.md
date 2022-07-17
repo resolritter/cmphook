@@ -1,3 +1,0 @@
-# Running
-
-`npm run start`
