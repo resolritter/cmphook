@@ -7,7 +7,12 @@ to the render lifecycle method of individual component node.
 
 # API usage
 
-You can check the examples in the `mithril` and `react` folders.
+[Tests](https://github.com/resolritter/hooker/blob/master/src/hooks.spec.js)
+should be using the full API.
+
+See the app examples
+[Mithril](https://github.com/resolritter/hooker/tree/master/examples/mithril) and
+[React](https://github.com/resolritter/hooker/tree/master/examples/react).
 
 # Motivation
 
